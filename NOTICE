@@ -1,0 +1,5 @@
+This repository contains modifications of Motion Transformer (MTR),
+https://github.com/sshaoshuai/MTR (commit a5ba7bdafa09a1a355cc34f8a895499a2b14ddb3),
+which is licensed under the Apache License, Version 2.0. The files in mtr_modified_files/ and the changes in
+mtr_full.patch are derived from MTR and remain under the Apache License, Version 2.0.
+The Waymo Open Motion Dataset is not included; its use is subject to the Waymo Open Dataset License Agreement.

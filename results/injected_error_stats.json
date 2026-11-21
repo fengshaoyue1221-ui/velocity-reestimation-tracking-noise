@@ -1,0 +1,265 @@
+{
+ "scenes": 3000,
+ "note": "errors over valid past frames t=-9..0 of non-ego agents; vehicle theory at 20 m",
+ "lambda_0.25": {
+  "TYPE_CYCLIST": {
+   "0-10 m": {
+    "count": 815,
+    "mean_pos_err_m": 0.09873346239328384,
+    "mean_vel_err_mps": 0.1367449313402176
+   },
+   "10-20 m": {
+    "count": 1446,
+    "mean_pos_err_m": 0.10398834943771362,
+    "mean_vel_err_mps": 0.15979881584644318
+   },
+   "20-30 m": {
+    "count": 1388,
+    "mean_pos_err_m": 0.11067219823598862,
+    "mean_vel_err_mps": 0.19653628766536713
+   },
+   "30-50 m": {
+    "count": 2048,
+    "mean_pos_err_m": 0.13755962252616882,
+    "mean_vel_err_mps": 0.2287828028202057
+   },
+   "50-inf m": {
+    "count": 1077,
+    "mean_pos_err_m": 0.19192253053188324,
+    "mean_vel_err_mps": 0.30451035499572754
+   }
+  },
+  "TYPE_PEDESTRIAN": {
+   "0-10 m": {
+    "count": 3910,
+    "mean_pos_err_m": 0.08924653381109238,
+    "mean_vel_err_mps": 0.15242542326450348
+   },
+   "10-20 m": {
+    "count": 14328,
+    "mean_pos_err_m": 0.10753235965967178,
+    "mean_vel_err_mps": 0.17885631322860718
+   },
+   "20-30 m": {
+    "count": 14296,
+    "mean_pos_err_m": 0.130455881357193,
+    "mean_vel_err_mps": 0.21488115191459656
+   },
+   "30-50 m": {
+    "count": 27163,
+    "mean_pos_err_m": 0.16229012608528137,
+    "mean_vel_err_mps": 0.26404693722724915
+   },
+   "50-inf m": {
+    "count": 20777,
+    "mean_pos_err_m": 0.21479453146457672,
+    "mean_vel_err_mps": 0.34547436237335205
+   }
+  },
+  "TYPE_VEHICLE": {
+   "0-10 m": {
+    "count": 48097,
+    "mean_pos_err_m": 0.05803380906581879,
+    "mean_vel_err_mps": 0.11146509647369385
+   },
+   "10-20 m": {
+    "count": 93758,
+    "mean_pos_err_m": 0.07127070426940918,
+    "mean_vel_err_mps": 0.12848374247550964
+   },
+   "20-30 m": {
+    "count": 124504,
+    "mean_pos_err_m": 0.08649597316980362,
+    "mean_vel_err_mps": 0.15069644153118134
+   },
+   "30-50 m": {
+    "count": 316760,
+    "mean_pos_err_m": 0.1105196550488472,
+    "mean_vel_err_mps": 0.18516364693641663
+   },
+   "50-inf m": {
+    "count": 349449,
+    "mean_pos_err_m": 0.2007644772529602,
+    "mean_vel_err_mps": 0.23696407675743103
+   }
+  },
+  "theory_vehicle_20m": {
+   "E_pos_err": 0.07833213358221876,
+   "E_vel_err": 0.13880489435118504
+  }
+ },
+ "lambda_0.5": {
+  "TYPE_CYCLIST": {
+   "0-10 m": {
+    "count": 815,
+    "mean_pos_err_m": 0.1726178377866745,
+    "mean_vel_err_mps": 0.5002891421318054
+   },
+   "10-20 m": {
+    "count": 1446,
+    "mean_pos_err_m": 0.19397935271263123,
+    "mean_vel_err_mps": 0.6008673310279846
+   },
+   "20-30 m": {
+    "count": 1388,
+    "mean_pos_err_m": 0.2213498055934906,
+    "mean_vel_err_mps": 0.75082927942276
+   },
+   "30-50 m": {
+    "count": 2048,
+    "mean_pos_err_m": 0.2751081585884094,
+    "mean_vel_err_mps": 0.8870754241943359
+   },
+   "50-inf m": {
+    "count": 1077,
+    "mean_pos_err_m": 0.3838457763195038,
+    "mean_vel_err_mps": 1.1949435472488403
+   }
+  },
+  "TYPE_PEDESTRIAN": {
+   "0-10 m": {
+    "count": 3910,
+    "mean_pos_err_m": 0.17849494516849518,
+    "mean_vel_err_mps": 0.571915864944458
+   },
+   "10-20 m": {
+    "count": 14328,
+    "mean_pos_err_m": 0.2119380384683609,
+    "mean_vel_err_mps": 0.682578444480896
+   },
+   "20-30 m": {
+    "count": 14296,
+    "mean_pos_err_m": 0.2651856541633606,
+    "mean_vel_err_mps": 0.8319835662841797
+   },
+   "30-50 m": {
+    "count": 27163,
+    "mean_pos_err_m": 0.3249509036540985,
+    "mean_vel_err_mps": 1.033416986465454
+   },
+   "50-inf m": {
+    "count": 20777,
+    "mean_pos_err_m": 0.4291347563266754,
+    "mean_vel_err_mps": 1.3629943132400513
+   }
+  },
+  "TYPE_VEHICLE": {
+   "0-10 m": {
+    "count": 48097,
+    "mean_pos_err_m": 0.11811798065900803,
+    "mean_vel_err_mps": 0.38822633028030396
+   },
+   "10-20 m": {
+    "count": 93758,
+    "mean_pos_err_m": 0.20695094764232635,
+    "mean_vel_err_mps": 0.4659959077835083
+   },
+   "20-30 m": {
+    "count": 124504,
+    "mean_pos_err_m": 0.17327982187271118,
+    "mean_vel_err_mps": 0.5622898936271667
+   },
+   "30-50 m": {
+    "count": 316760,
+    "mean_pos_err_m": 0.266659140586853,
+    "mean_vel_err_mps": 0.7078001499176025
+   },
+   "50-inf m": {
+    "count": 349449,
+    "mean_pos_err_m": 0.36285650730133057,
+    "mean_vel_err_mps": 0.9225565791130066
+   }
+  },
+  "theory_vehicle_20m": {
+   "E_pos_err": 0.15666426716443752,
+   "E_vel_err": 0.5110233745433289
+  }
+ },
+ "lambda_1.0": {
+  "TYPE_CYCLIST": {
+   "0-10 m": {
+    "count": 815,
+    "mean_pos_err_m": 0.32047733664512634,
+    "mean_vel_err_mps": 1.953852653503418
+   },
+   "10-20 m": {
+    "count": 1446,
+    "mean_pos_err_m": 0.37404391169548035,
+    "mean_vel_err_mps": 2.365241765975952
+   },
+   "20-30 m": {
+    "count": 1388,
+    "mean_pos_err_m": 0.4426882565021515,
+    "mean_vel_err_mps": 2.962110996246338
+   },
+   "30-50 m": {
+    "count": 2048,
+    "mean_pos_err_m": 0.550203800201416,
+    "mean_vel_err_mps": 3.516202926635742
+   },
+   "50-inf m": {
+    "count": 1077,
+    "mean_pos_err_m": 0.7676965594291687,
+    "mean_vel_err_mps": 4.752911567687988
+   }
+  },
+  "TYPE_PEDESTRIAN": {
+   "0-10 m": {
+    "count": 3910,
+    "mean_pos_err_m": 0.3570077121257782,
+    "mean_vel_err_mps": 2.25113844871521
+   },
+   "10-20 m": {
+    "count": 14328,
+    "mean_pos_err_m": 0.4227074682712555,
+    "mean_vel_err_mps": 2.696143865585327
+   },
+   "20-30 m": {
+    "count": 14296,
+    "mean_pos_err_m": 0.5221290588378906,
+    "mean_vel_err_mps": 3.2952640056610107
+   },
+   "30-50 m": {
+    "count": 27163,
+    "mean_pos_err_m": 0.6489662528038025,
+    "mean_vel_err_mps": 4.109144687652588
+   },
+   "50-inf m": {
+    "count": 20777,
+    "mean_pos_err_m": 0.8582407236099243,
+    "mean_vel_err_mps": 5.432654857635498
+   }
+  },
+  "TYPE_VEHICLE": {
+   "0-10 m": {
+    "count": 48097,
+    "mean_pos_err_m": 0.23409050703048706,
+    "mean_vel_err_mps": 1.4873698949813843
+   },
+   "10-20 m": {
+    "count": 93758,
+    "mean_pos_err_m": 0.2850687503814697,
+    "mean_vel_err_mps": 1.8111646175384521
+   },
+   "20-30 m": {
+    "count": 124504,
+    "mean_pos_err_m": 0.34601202607154846,
+    "mean_vel_err_mps": 2.206859827041626
+   },
+   "30-50 m": {
+    "count": 316760,
+    "mean_pos_err_m": 0.6554535031318665,
+    "mean_vel_err_mps": 2.7971744537353516
+   },
+   "50-inf m": {
+    "count": 349449,
+    "mean_pos_err_m": 0.6333423256874084,
+    "mean_vel_err_mps": 3.6646249294281006
+   }
+  },
+  "theory_vehicle_20m": {
+   "E_pos_err": 0.31332853432887503,
+   "E_vel_err": 1.9974540470456474
+  }
+ }
+}

@@ -1,0 +1,1709 @@
+diff --git a/mtr/datasets/waymo/perception_noise.py b/mtr/datasets/waymo/perception_noise.py
+new file mode 100644
+index 0000000..c1f1019
+--- /dev/null
++++ b/mtr/datasets/waymo/perception_noise.py
+@@ -0,0 +1,185 @@
++"""
++Perception-noise injection for WOMD history trajectories (MTR data format).
++
++traj attribute layout (per MTR data_preprocess.py):
++    [0]x [1]y [2]z [3]length [4]width [5]height [6]heading [7]vx [8]vy [9]valid
++
++Only the PAST part (t <= current_time_index) is perturbed. The future / GT is
++never touched, so evaluation remains against clean ground truth.
++
++Noise types (each can be switched off by setting its strength to 0):
++  1. pos   : temporally-correlated (AR(1)) position jitter, scaled with range to SDC
++  2. heading: AR(1) heading jitter (larger for pedestrians, whose heading is ambiguous)
++  3. vel   : velocity re-estimated from noisy positions + extra white noise
++  4. size  : per-track constant box size error (multiplicative)
++  5. drop  : random frame dropout (valid -> 0)
++  6. trunc : history truncation (track "just appeared"), current frame kept
++  7. idswap: swap the history of two nearby same-type agents before a random time
++"""
++import numpy as np
++
++TYPE_SCALE = {  # relative noise multiplier per object type
++    'TYPE_VEHICLE': 1.0,
++    'TYPE_PEDESTRIAN': 1.5,
++    'TYPE_CYCLIST': 1.3,
++}
++
++
++class PerceptionNoise:
++    def __init__(self, cfg=None, seed=None):
++        cfg = dict(cfg or {})
++        self.level = float(cfg.get('LEVEL', 1.0))            # global multiplier, sweep this
++        self.pos_std = float(cfg.get('POS_STD', 0.15))       # m, at 0 range
++        self.pos_range_coef = float(cfg.get('POS_RANGE_COEF', 0.005))  # extra m per m of range
++        self.pos_rho = float(cfg.get('POS_RHO', 0.8))        # AR(1) temporal correlation
++        self.head_std = float(cfg.get('HEAD_STD', 0.05))     # rad
++        self.vel_std = float(cfg.get('VEL_STD', 0.2))        # m/s white noise on re-estimated vel
++        self.size_std = float(cfg.get('SIZE_STD', 0.05))     # relative
++        self.drop_prob = float(cfg.get('DROP_PROB', 0.05))
++        self.trunc_prob = float(cfg.get('TRUNC_PROB', 0.1))
++        self.idswap_prob = float(cfg.get('IDSWAP_PROB', 0.05))  # per scene
++        self.idswap_dist = float(cfg.get('IDSWAP_DIST', 3.0))   # m, candidate pair distance
++        self.keep_sdc_clean = bool(cfg.get('KEEP_SDC_CLEAN', True))
++        self.dt = float(cfg.get('DT', 0.1))
++        self.vel_from_pos = bool(cfg.get('VEL_FROM_POS', True))
++        self.pos_for_vel_only = bool(cfg.get('POS_FOR_VEL_ONLY', False))
++        self.rng = np.random.default_rng(seed)
++        self.type_scale = dict(TYPE_SCALE)
++        self.type_scale.update({k: float(v) for k, v in dict(cfg.get('CLASS_SCALE', {}) or {}).items()})
++
++    def _ar1(self, shape, rho):
++        """AR(1) noise along axis 1 with unit marginal variance."""
++        n_obj, n_t = shape[0], shape[1]
++        e = self.rng.standard_normal(shape)
++        out = np.empty(shape, dtype=np.float32)
++        out[:, 0] = e[:, 0]
++        s = np.sqrt(1 - rho ** 2)
++        for t in range(1, n_t):
++            out[:, t] = rho * out[:, t - 1] + s * e[:, t]
++        return out
++
++    def __call__(self, trajs_past, obj_types, sdc_index, protect_mask=None):
++        """
++        Args:
++            trajs_past: (N, T, 10) float32, clean history incl. current frame (last index)
++            obj_types:  (N,) array of type strings
++            sdc_index:  int
++            protect_mask: (N,) bool, objects whose CURRENT-frame validity must be preserved
++                          (e.g. tracks_to_predict). Their history can still be noisy.
++        Returns:
++            noisy copy (N, T, 10), info dict (for logging / supervision of a denoiser)
++        """
++        if self.level <= 0:
++            return trajs_past.copy(), {}
++        L = self.level
++        x = trajs_past.copy()
++        N, T, _ = x.shape
++        valid = x[:, :, 9] > 0
++        type_s = np.array([self.type_scale.get(t, 1.0) for t in obj_types], dtype=np.float32)
++        noisy_obj = np.ones(N, dtype=bool)
++        if self.keep_sdc_clean and 0 <= sdc_index < N:
++            noisy_obj[sdc_index] = False
++        if protect_mask is None:
++            protect_mask = np.zeros(N, dtype=bool)
++
++        # range to SDC at each time (sensor-centric noise grows with distance)
++        sdc_xy = x[sdc_index, :, 0:2] if 0 <= sdc_index < N else np.zeros((T, 2), np.float32)
++        rng_dist = np.linalg.norm(x[:, :, 0:2] - sdc_xy[None], axis=-1)
++
++        # 1. position jitter
++        pos_sigma = (self.pos_std + self.pos_range_coef * rng_dist) * type_s[:, None] * L
++        x[:, :, 0:2] += self._ar1((N, T, 2), self.pos_rho) * pos_sigma[..., None]
++
++        # 2. heading jitter
++        head_sigma = self.head_std * type_s[:, None] * L
++        x[:, :, 6] += self._ar1((N, T), self.pos_rho) * head_sigma
++        x[:, :, 6] = (x[:, :, 6] + np.pi) % (2 * np.pi) - np.pi
++
++        # 3. velocity: finite difference of noisy positions where consecutive frames valid
++        fd = np.zeros((N, T, 2), np.float32)
++        both = valid[:, 1:] & valid[:, :-1]
++        fd[:, 1:][both] = ((x[:, 1:, 0:2] - x[:, :-1, 0:2]) / self.dt)[both]
++        fd[:, 0] = fd[:, 1] if T > 1 else trajs_past[:, 0, 7:9]
++        no_prev = np.concatenate([np.zeros((N, 1), bool), ~both], axis=1)
++        fd[no_prev] = trajs_past[:, :, 7:9][no_prev]
++        alpha = min(1.0, L)  # blend: level 0 -> clean vel, level>=1 -> fully re-estimated
++        if self.vel_from_pos:
++            x[:, :, 7:9] = (1 - alpha) * trajs_past[:, :, 7:9] + alpha * fd
++        else:
++            x[:, :, 7:9] = trajs_past[:, :, 7:9]
++        x[:, :, 7:9] += self.rng.standard_normal((N, T, 2)) * self.vel_std * L
++        if self.pos_for_vel_only:
++            x[:, :, 0:2] = trajs_past[:, :, 0:2]
++
++        # 4. size error (constant per track)
++        size_mult = 1 + self.rng.standard_normal((N, 1, 3)) * self.size_std * L
++        x[:, :, 3:6] *= np.clip(size_mult, 0.5, 1.5)
++
++        # 5. frame dropout (never drop current frame)
++        drop = self.rng.random((N, T)) < self.drop_prob * L
++        drop[:, -1] = False
++        new_valid = valid & ~drop
++
++        # 6. truncation
++        trunc = self.rng.random(N) < self.trunc_prob * L
++        trunc_len = self.rng.integers(1, T, size=N)  # number of oldest frames removed
++        for i in np.where(trunc)[0]:
++            new_valid[i, :trunc_len[i]] = False
++
++        # 7. ID swap between two close same-type agents (history before t_swap exchanged)
++        swapped = None
++        if self.rng.random() < self.idswap_prob * L:
++            cur_valid = valid[:, -1] & noisy_obj
++            idx = np.where(cur_valid)[0]
++            cand = []
++            for a_i, a in enumerate(idx):
++                for b in idx[a_i + 1:]:
++                    if obj_types[a] == obj_types[b] and \
++                            np.linalg.norm(x[a, -1, :2] - x[b, -1, :2]) < self.idswap_dist:
++                        cand.append((a, b))
++            if cand:
++                a, b = cand[self.rng.integers(len(cand))]
++                t_swap = int(self.rng.integers(1, T))  # frames [0, t_swap) are swapped
++                tmp = x[a, :t_swap].copy(); x[a, :t_swap] = x[b, :t_swap]; x[b, :t_swap] = tmp
++                tv = new_valid[a, :t_swap].copy(); new_valid[a, :t_swap] = new_valid[b, :t_swap]; new_valid[b, :t_swap] = tv
++                swapped = (int(a), int(b), t_swap)
++
++        # restore clean objects, keep protected current frames valid
++        x[~noisy_obj] = trajs_past[~noisy_obj]
++        new_valid[~noisy_obj] = valid[~noisy_obj]
++        new_valid[protect_mask, -1] = valid[protect_mask, -1]
++        x[:, :, 9] = new_valid.astype(np.float32)
++
++        info = {'pos_sigma': pos_sigma.astype(np.float32), 'idswap': swapped,
++                'truncated': trunc & noisy_obj, 'dropped': drop & valid & noisy_obj[:, None]}
++        return x.astype(np.float32), info
++
++
++def smooth_velocity(trajs, k, dt=0.1, skip_idx=None):
++    """Least-squares velocity over the last k valid frames (per agent, per time step).
++    trajs: (N, T, 10) with x,y at [0:2], vx,vy at [7:9], valid at [9]. Frames with fewer than
++    2 valid points in the window keep their given velocity. Agent skip_idx (ego) is untouched."""
++    out = trajs.copy()
++    N, T, _ = trajs.shape
++    valid = trajs[:, :, 9] > 0
++    t = np.arange(T, dtype=np.float64) * dt
++    for e in range(T):
++        s = max(0, e - k + 1)
++        w = valid[:, s:e + 1].astype(np.float64)
++        n = w.sum(1)
++        ok = (n >= 2) & valid[:, e]
++        if not ok.any():
++            continue
++        tt = t[s:e + 1][None]
++        tm = (w * tt).sum(1) / np.maximum(n, 1)
++        dtc = tt - tm[:, None]
++        den = (w * dtc ** 2).sum(1)
++        ok &= den > 0
++        for d in range(2):
++            p = trajs[:, s:e + 1, d].astype(np.float64)
++            pm = (w * p).sum(1) / np.maximum(n, 1)
++            v = (w * dtc * (p - pm[:, None])).sum(1) / np.maximum(den, 1e-12)
++            out[ok, e, 7 + d] = v[ok]
++    if skip_idx is not None and 0 <= skip_idx < N:
++        out[skip_idx] = trajs[skip_idx]
++    return out.astype(np.float32)
+diff --git a/mtr/datasets/waymo/waymo_dataset.py b/mtr/datasets/waymo/waymo_dataset.py
+index 0fcaab1..c1bb172 100644
+--- a/mtr/datasets/waymo/waymo_dataset.py
++++ b/mtr/datasets/waymo/waymo_dataset.py
+@@ -13,6 +13,8 @@ import torch
+ from mtr.datasets.dataset import DatasetTemplate
+ from mtr.utils import common_utils
+ from mtr.config import cfg
++from mtr.datasets.waymo.perception_noise import PerceptionNoise, smooth_velocity
++import zlib
+ 
+ 
+ class WaymoDataset(DatasetTemplate):
+@@ -24,6 +26,13 @@ class WaymoDataset(DatasetTemplate):
+         self.infos = self.get_all_infos(self.data_root / self.dataset_cfg.INFO_FILE[self.mode])
+         self.logger.info(f'Total scenes after filters: {len(self.infos)}')
+ 
++        # ---- perception noise (robust prediction experiments) ----
++        noise_cfg = self.dataset_cfg.get('PERCEPTION_NOISE', None)
++        apply_key = 'APPLY_TRAIN' if training else 'APPLY_TEST'
++        self.noise_cfg = noise_cfg if (noise_cfg is not None and noise_cfg.get(apply_key, False)) else None
++        if self.noise_cfg is not None:
++            self.logger.info(f'Perception noise ON ({self.mode}): {dict(self.noise_cfg)}')
++
+     def get_all_infos(self, info_path):
+         self.logger.info(f'Start to load infos from {info_path}')
+         with open(info_path, 'rb') as f:
+@@ -94,7 +103,28 @@ class WaymoDataset(DatasetTemplate):
+         obj_trajs_full = track_infos['trajs']  # (num_objects, num_timestamp, 10)
+         obj_trajs_past = obj_trajs_full[:, :current_time_index + 1]
+         obj_trajs_future = obj_trajs_full[:, current_time_index + 1:]
+-
++        obj_trajs_full_clean = obj_trajs_full
++
++        if self.noise_cfg is not None:
++            # deterministic per-scene noise at test time, random at train time
++            seed = zlib.crc32(str(scene_id).encode()) + int(self.noise_cfg.get('SEED', 0)) if not self.training else None
++            protect = np.zeros(len(obj_types), dtype=bool)
++            protect[track_index_to_predict] = True
++            p_clean = float(self.noise_cfg.get('TRAIN_CLEAN_PROB', 0.0))
++            skip_noise = self.training and p_clean > 0 and np.random.default_rng().random() < p_clean
++            if not skip_noise:
++                obj_trajs_past, _ = PerceptionNoise(self.noise_cfg, seed=seed)(
++                    obj_trajs_past, obj_types, sdc_track_index, protect_mask=protect)
++            k_smooth = int(self.noise_cfg.get('VEL_SMOOTH_K', 0))
++            if k_smooth > 1:  # test-time least-squares velocity re-estimation
++                obj_trajs_past = smooth_velocity(obj_trajs_past, k_smooth,
++                                                 float(self.noise_cfg.get('DT', 0.1)), skip_idx=sdc_track_index)
++            # center frame is built from the (noisy) current observation, as on a real car
++            obj_trajs_full = np.concatenate([obj_trajs_past, obj_trajs_future], axis=1)
++
++        if self.dataset_cfg.get('DROP_VELOCITY_INPUT', False):  # no-velocity ablation
++            obj_trajs_past = obj_trajs_past.copy()
++            obj_trajs_past[:, :, 7:9] = 0.0
+         center_objects, track_index_to_predict = self.get_interested_agents(
+             track_index_to_predict=track_index_to_predict,
+             obj_trajs_full=obj_trajs_full,
+@@ -129,7 +159,7 @@ class WaymoDataset(DatasetTemplate):
+             'center_gt_trajs': center_gt_trajs,
+             'center_gt_trajs_mask': center_gt_trajs_mask,
+             'center_gt_final_valid_idx': center_gt_final_valid_idx,
+-            'center_gt_trajs_src': obj_trajs_full[track_index_to_predict]
++            'center_gt_trajs_src': obj_trajs_full_clean[track_index_to_predict]
+         }
+ 
+         if not self.dataset_cfg.get('WITHOUT_HDMAP', False):
+diff --git a/mtr/datasets/waymo/waymo_eval.py b/mtr/datasets/waymo/waymo_eval.py
+index 2aa496c..5e336c4 100644
+--- a/mtr/datasets/waymo/waymo_eval.py
++++ b/mtr/datasets/waymo/waymo_eval.py
+@@ -6,6 +6,10 @@
+ 
+ import numpy as np
+ import tensorflow as tf
++try:
++    tf.config.set_visible_devices([], "GPU")
++except Exception:
++    pass
+ import os
+ 
+ from google.protobuf import text_format
+diff --git a/mtr/ops/attention/src/attention_func.cpp b/mtr/ops/attention/src/attention_func.cpp
+index 07937f1..1bb6af0 100644
+--- a/mtr/ops/attention/src/attention_func.cpp
++++ b/mtr/ops/attention/src/attention_func.cpp
+@@ -4,7 +4,7 @@
+ #include "attention_func.h"
+ 
+ #define CHECK_CUDA(x) do { \
+-  if (!x.type().is_cuda()) { \
++  if (!x.is_cuda()) { \
+     fprintf(stderr, "%s must be CUDA tensor at %s:%d\n", #x, __FILE__, __LINE__); \
+     exit(-1); \
+   } \
+@@ -39,15 +39,15 @@ int attention_weight_computation_wrapper(
+ 
+     CHECK_INPUT(output);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *query_features_data = query_features.data<float>();
+-    const float *key_features_data = key_features.data<float>();
++    const float *query_features_data = query_features.data_ptr<float>();
++    const float *key_features_data = key_features.data_ptr<float>();
+ 
+-    float *output_data = output.data<float>();
++    float *output_data = output.data_ptr<float>();
+ 
+     attention_weight_computation_launcher(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -84,17 +84,17 @@ int attention_weight_computation_grad_wrapper(
+     CHECK_INPUT(grad_query_features);
+     CHECK_INPUT(grad_key_features);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *query_features_data = query_features.data<float>();
+-    const float *key_features_data = key_features.data<float>();
++    const float *query_features_data = query_features.data_ptr<float>();
++    const float *key_features_data = key_features.data_ptr<float>();
+ 
+-    float *grad_out_data = grad_out.data<float>();
+-    float *grad_query_features_data = grad_query_features.data<float>();
+-    float *grad_key_features_data = grad_key_features.data<float>();
++    float *grad_out_data = grad_out.data_ptr<float>();
++    float *grad_query_features_data = grad_query_features.data_ptr<float>();
++    float *grad_key_features_data = grad_key_features.data_ptr<float>();
+ 
+     attention_weight_computation_grad_launcher(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -127,15 +127,15 @@ int attention_value_computation_wrapper(
+ 
+     CHECK_INPUT(output);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *attn_weight_data = attn_weight.data<float>();
+-    const float *value_features_data = value_features.data<float>();
++    const float *attn_weight_data = attn_weight.data_ptr<float>();
++    const float *value_features_data = value_features.data_ptr<float>();
+ 
+-    float *output_data = output.data<float>();
++    float *output_data = output.data_ptr<float>();
+ 
+     attention_value_computation_launcher(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -172,17 +172,17 @@ int attention_value_computation_grad_wrapper(
+     CHECK_INPUT(grad_attn_weight);
+     CHECK_INPUT(grad_value_features);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *attn_weight_data = attn_weight.data<float>();
+-    const float *value_features_data = value_features.data<float>();
++    const float *attn_weight_data = attn_weight.data_ptr<float>();
++    const float *value_features_data = value_features.data_ptr<float>();
+ 
+-    float *grad_out_data = grad_out.data<float>();
+-    float *grad_attn_weight_data = grad_attn_weight.data<float>();
+-    float *grad_value_features_data = grad_value_features.data<float>();
++    float *grad_out_data = grad_out.data_ptr<float>();
++    float *grad_attn_weight_data = grad_attn_weight.data_ptr<float>();
++    float *grad_value_features_data = grad_value_features.data_ptr<float>();
+ 
+     attention_value_computation_grad_launcher(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+diff --git a/mtr/ops/attention/src/attention_func_v2.cpp b/mtr/ops/attention/src/attention_func_v2.cpp
+index 2c796c5..39f588f 100644
+--- a/mtr/ops/attention/src/attention_func_v2.cpp
++++ b/mtr/ops/attention/src/attention_func_v2.cpp
+@@ -4,7 +4,7 @@
+ #include "attention_func_v2.h"
+ 
+ #define CHECK_CUDA(x) do { \
+-  if (!x.type().is_cuda()) { \
++  if (!x.is_cuda()) { \
+     fprintf(stderr, "%s must be CUDA tensor at %s:%d\n", #x, __FILE__, __LINE__); \
+     exit(-1); \
+   } \
+@@ -39,15 +39,15 @@ int attention_weight_computation_wrapper_v2(
+ 
+     CHECK_INPUT(output);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *query_features_data = query_features.data<float>();
+-    const float *key_features_data = key_features.data<float>();
++    const float *query_features_data = query_features.data_ptr<float>();
++    const float *key_features_data = key_features.data_ptr<float>();
+ 
+-    float *output_data = output.data<float>();
++    float *output_data = output.data_ptr<float>();
+ 
+     attention_weight_computation_launcher_v2(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -84,17 +84,17 @@ int attention_weight_computation_grad_wrapper_v2(
+     CHECK_INPUT(grad_query_features);
+     CHECK_INPUT(grad_key_features);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *query_features_data = query_features.data<float>();
+-    const float *key_features_data = key_features.data<float>();
++    const float *query_features_data = query_features.data_ptr<float>();
++    const float *key_features_data = key_features.data_ptr<float>();
+ 
+-    float *grad_out_data = grad_out.data<float>();
+-    float *grad_query_features_data = grad_query_features.data<float>();
+-    float *grad_key_features_data = grad_key_features.data<float>();
++    float *grad_out_data = grad_out.data_ptr<float>();
++    float *grad_query_features_data = grad_query_features.data_ptr<float>();
++    float *grad_key_features_data = grad_key_features.data_ptr<float>();
+ 
+     attention_weight_computation_grad_launcher_v2(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -127,15 +127,15 @@ int attention_value_computation_wrapper_v2(
+ 
+     CHECK_INPUT(output);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *attn_weight_data = attn_weight.data<float>();
+-    const float *value_features_data = value_features.data<float>();
++    const float *attn_weight_data = attn_weight.data_ptr<float>();
++    const float *value_features_data = value_features.data_ptr<float>();
+ 
+-    float *output_data = output.data<float>();
++    float *output_data = output.data_ptr<float>();
+ 
+     attention_value_computation_launcher_v2(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+@@ -172,17 +172,17 @@ int attention_value_computation_grad_wrapper_v2(
+     CHECK_INPUT(grad_attn_weight);
+     CHECK_INPUT(grad_value_features);
+ 
+-    const int *query_batch_cnt_data = query_batch_cnt.data<int>();
+-    const int *key_batch_cnt_data = key_batch_cnt.data<int>();
+-    const int *index_pair_batch_data = index_pair_batch.data<int>();
+-    const int *index_pair_data = index_pair.data<int>();
++    const int *query_batch_cnt_data = query_batch_cnt.data_ptr<int>();
++    const int *key_batch_cnt_data = key_batch_cnt.data_ptr<int>();
++    const int *index_pair_batch_data = index_pair_batch.data_ptr<int>();
++    const int *index_pair_data = index_pair.data_ptr<int>();
+ 
+-    const float *attn_weight_data = attn_weight.data<float>();
+-    const float *value_features_data = value_features.data<float>();
++    const float *attn_weight_data = attn_weight.data_ptr<float>();
++    const float *value_features_data = value_features.data_ptr<float>();
+ 
+-    float *grad_out_data = grad_out.data<float>();
+-    float *grad_attn_weight_data = grad_attn_weight.data<float>();
+-    float *grad_value_features_data = grad_value_features.data<float>();
++    float *grad_out_data = grad_out.data_ptr<float>();
++    float *grad_attn_weight_data = grad_attn_weight.data_ptr<float>();
++    float *grad_value_features_data = grad_value_features.data_ptr<float>();
+ 
+     attention_value_computation_grad_launcher_v2(
+         b, total_query_num, local_size, total_key_num, nhead, hdim,
+diff --git a/mtr/ops/knn/src/knn.cpp b/mtr/ops/knn/src/knn.cpp
+index d474d1d..9fc6ad6 100644
+--- a/mtr/ops/knn/src/knn.cpp
++++ b/mtr/ops/knn/src/knn.cpp
+@@ -13,11 +13,11 @@
+ // output idx: (n, k), int
+ void knn_batch(at::Tensor xyz_tensor, at::Tensor query_xyz_tensor, at::Tensor batch_idxs_tensor, at::Tensor query_batch_offsets_tensor, at::Tensor idx_tensor, int n, int m, int k){
+ 
+-    const float *query_xyz = query_xyz_tensor.data<float>();
+-    const float *xyz = xyz_tensor.data<float>();
+-    const int *batch_idxs = batch_idxs_tensor.data<int>();
+-    const int *query_batch_offsets = query_batch_offsets_tensor.data<int>();
+-    int *idx = idx_tensor.data<int>();
++    const float *query_xyz = query_xyz_tensor.data_ptr<float>();
++    const float *xyz = xyz_tensor.data_ptr<float>();
++    const int *batch_idxs = batch_idxs_tensor.data_ptr<int>();
++    const int *query_batch_offsets = query_batch_offsets_tensor.data_ptr<int>();
++    int *idx = idx_tensor.data_ptr<int>();
+ 
+     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+ 
+@@ -27,11 +27,11 @@ void knn_batch(at::Tensor xyz_tensor, at::Tensor query_xyz_tensor, at::Tensor ba
+ 
+ void knn_batch_mlogk(at::Tensor xyz_tensor, at::Tensor query_xyz_tensor, at::Tensor batch_idxs_tensor, at::Tensor query_batch_offsets_tensor, at::Tensor idx_tensor, int n, int m, int k){
+ 
+-    const float *query_xyz = query_xyz_tensor.data<float>();
+-    const float *xyz = xyz_tensor.data<float>();
+-    const int *batch_idxs = batch_idxs_tensor.data<int>();
+-    const int *query_batch_offsets = query_batch_offsets_tensor.data<int>();
+-    int *idx = idx_tensor.data<int>();
++    const float *query_xyz = query_xyz_tensor.data_ptr<float>();
++    const float *xyz = xyz_tensor.data_ptr<float>();
++    const int *batch_idxs = batch_idxs_tensor.data_ptr<int>();
++    const int *query_batch_offsets = query_batch_offsets_tensor.data_ptr<int>();
++    int *idx = idx_tensor.data_ptr<int>();
+ 
+     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+ 
+diff --git a/tests/test_perception_noise.py b/tests/test_perception_noise.py
+new file mode 100644
+index 0000000..078593e
+--- /dev/null
++++ b/tests/test_perception_noise.py
+@@ -0,0 +1,49 @@
++import sys, os, importlib.util, numpy as np
++spec = importlib.util.spec_from_file_location("pn", os.path.join(os.path.dirname(__file__), "../mtr/datasets/waymo/perception_noise.py"))
++pn = importlib.util.module_from_spec(spec); spec.loader.exec_module(pn)
++
++def make_scene(N=30, T=11, seed=0):
++    r = np.random.default_rng(seed)
++    x = np.zeros((N, T, 10), np.float32)
++    start = r.uniform(-60, 60, (N, 2)); v = r.uniform(-10, 10, (N, 2))
++    t = np.arange(T) * 0.1
++    x[:, :, 0:2] = start[:, None] + v[:, None] * t[None, :, None]
++    x[:, :, 3:6] = [4.5, 2.0, 1.6]; x[:, :, 6] = np.arctan2(v[:, 1], v[:, 0])[:, None]
++    x[:, :, 7:9] = v[:, None]; x[:, :, 9] = 1
++    x[0, :, 0:2] = 0; x[0, :, 7:9] = 0  # SDC at origin
++    types = np.array(['TYPE_VEHICLE'] * 20 + ['TYPE_PEDESTRIAN'] * 10)
++    return x, types
++
++def test_all():
++    x, types = make_scene()
++    protect = np.zeros(len(types), bool); protect[[3, 7, 25]] = True
++    noise = pn.PerceptionNoise({'LEVEL': 1.0, 'IDSWAP_PROB': 0}, seed=1)
++    y, info = noise(x, types, sdc_index=0, protect_mask=protect)
++    assert y.shape == x.shape and y.dtype == np.float32
++    assert np.allclose(y[0], x[0]), "SDC must stay clean"
++    assert (y[protect, -1, 9] == 1).all(), "predicted agents must stay valid at current frame"
++    assert not np.allclose(y[1:, :, :2], x[1:, :, :2]), "positions should be perturbed"
++    # level 0 -> identity
++    y0, _ = pn.PerceptionNoise({'LEVEL': 0.0}, seed=1)(x, types, 0)
++    assert np.allclose(y0, x)
++    # error grows with level
++    errs = []
++    for L in [0.5, 1, 2, 4]:
++        e = [np.abs(pn.PerceptionNoise({'LEVEL': L, 'IDSWAP_PROB': 0}, seed=s)(x, types, 0)[0][1:, :, :2] - x[1:, :, :2]).mean() for s in range(20)]
++        errs.append(np.mean(e))
++    assert all(a < b for a, b in zip(errs, errs[1:])), errs
++    # determinism with seed
++    a, _ = pn.PerceptionNoise({}, seed=5)(x, types, 0); b, _ = pn.PerceptionNoise({}, seed=5)(x, types, 0)
++    assert np.allclose(a, b)
++    # id swap happens when agents are close
++    x2 = x.copy(); x2[2] = x2[1]; x2[2, :, 0] += 1.0
++    hit = False
++    for s in range(50):
++        _, inf = pn.PerceptionNoise({'IDSWAP_PROB': 1.0, 'IDSWAP_DIST': 2.0}, seed=s)(x2, types, 0)
++        if inf['idswap'] and set(inf['idswap'][:2]) == {1, 2}: hit = True; break
++    assert hit, "expected id swap between agents 1 and 2"
++    print("mean |pos err| per level 0.5/1/2/4:", np.round(errs, 3))
++    print("ALL TESTS PASSED")
++
++if __name__ == "__main__":
++    test_all()
+diff --git a/tools/cfgs/waymo/a100_aug.yaml b/tools/cfgs/waymo/a100_aug.yaml
+new file mode 100644
+index 0000000..faac855
+--- /dev/null
++++ b/tools/cfgs/waymo/a100_aug.yaml
+@@ -0,0 +1,126 @@
++# A100 edition: train on all downloaded training shards (200 of 1000 = ~20% of WOMD, ~97k scenes),
++# evaluate on the full validation set (150 shards). Model and recipe identical to official MTR.
++# Role: noise-augmented training (APPLY_TRAIN: True).
++# Total batch is set on the command line (--batch_size 80 = official).
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: True
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 10
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/a100_clean.yaml b/tools/cfgs/waymo/a100_clean.yaml
+new file mode 100644
+index 0000000..2b6a5e2
+--- /dev/null
++++ b/tools/cfgs/waymo/a100_clean.yaml
+@@ -0,0 +1,126 @@
++# A100 edition: train on all downloaded training shards (200 of 1000 = ~20% of WOMD, ~97k scenes),
++# evaluate on the full validation set (150 shards). Model and recipe identical to official MTR.
++# Role: clean-trained model (noise only at evaluation); also used to EVALUATE both models.
++# Total batch is set on the command line (--batch_size 80 = official).
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: False
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 10
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/a2000_aug.yaml b/tools/cfgs/waymo/a2000_aug.yaml
+new file mode 100644
+index 0000000..20c899b
+--- /dev/null
++++ b/tools/cfgs/waymo/a2000_aug.yaml
+@@ -0,0 +1,128 @@
++# RTX A2000 edition (3x RTX A2000 12GB): train on all downloaded training shards
++# (~50 of 1000 = ~5% of WOMD) and evaluate on all downloaded validation shards (~50 of 150).
++# Model, optimizer and 30-epoch schedule identical to official MTR; only data scale and batch differ.
++# Role: noise-augmented training (APPLY_TRAIN: True).
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    DROP_VELOCITY_INPUT: False
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: True
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        TRAIN_CLEAN_PROB: 0.0
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 4   # 12GB RTX A2000; total batch set on command line (3 GPUs x 4 = 12)
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/a2000_clean.yaml b/tools/cfgs/waymo/a2000_clean.yaml
+new file mode 100644
+index 0000000..5c87ffc
+--- /dev/null
++++ b/tools/cfgs/waymo/a2000_clean.yaml
+@@ -0,0 +1,128 @@
++# RTX A2000 edition (3x RTX A2000 12GB): train on all downloaded training shards
++# (~50 of 1000 = ~5% of WOMD) and evaluate on all downloaded validation shards (~50 of 150).
++# Model, optimizer and 30-epoch schedule identical to official MTR; only data scale and batch differ.
++# Role: clean-trained model (noise only at evaluation); also used to EVALUATE both models.
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    DROP_VELOCITY_INPUT: False
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: False
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        TRAIN_CLEAN_PROB: 0.0
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 4   # 12GB RTX A2000; total batch set on command line (3 GPUs x 4 = 12)
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/a2000_mix.yaml b/tools/cfgs/waymo/a2000_mix.yaml
+new file mode 100644
+index 0000000..4a7875f
+--- /dev/null
++++ b/tools/cfgs/waymo/a2000_mix.yaml
+@@ -0,0 +1,129 @@
++# Mixed noise-aware training: 50% of training scenes clean, 50% corrupted at LEVEL 1.
++# RTX A2000 edition (3x RTX A2000 12GB): train on all downloaded training shards
++# (~50 of 1000 = ~5% of WOMD) and evaluate on all downloaded validation shards (~50 of 150).
++# Model, optimizer and 30-epoch schedule identical to official MTR; only data scale and batch differ.
++# Role: noise-augmented training (APPLY_TRAIN: True).
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    DROP_VELOCITY_INPUT: False
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: True
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        TRAIN_CLEAN_PROB: 0.5
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 4   # 12GB RTX A2000; total batch set on command line (3 GPUs x 4 = 12)
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/a2000_novel.yaml b/tools/cfgs/waymo/a2000_novel.yaml
+new file mode 100644
+index 0000000..dc6f8c0
+--- /dev/null
++++ b/tools/cfgs/waymo/a2000_novel.yaml
+@@ -0,0 +1,129 @@
++# No-velocity ablation: clean training, observed velocities zeroed (train and eval).
++# RTX A2000 edition (3x RTX A2000 12GB): train on all downloaded training shards
++# (~50 of 1000 = ~5% of WOMD) and evaluate on all downloaded validation shards (~50 of 150).
++# Model, optimizer and 30-epoch schedule identical to official MTR; only data scale and batch differ.
++# Role: clean-trained model (noise only at evaluation); also used to EVALUATE both models.
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    DROP_VELOCITY_INPUT: True
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 1, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: False
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++        TRAIN_CLEAN_PROB: 0.0
++        VEL_SMOOTH_K: 0
++        VEL_FROM_POS: True
++        POS_FOR_VEL_ONLY: False
++        CLASS_SCALE:           # per-class noise multiplier (defaults = paper setting)
++            TYPE_VEHICLE: 1.0
++            TYPE_PEDESTRIAN: 1.5
++            TYPE_CYCLIST: 1.3
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 4   # 12GB RTX A2000; total batch set on command line (3 GPUs x 4 = 12)
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/mtr+20p_noise_aug.yaml b/tools/cfgs/waymo/mtr+20p_noise_aug.yaml
+new file mode 100644
+index 0000000..c97d4c5
+--- /dev/null
++++ b/tools/cfgs/waymo/mtr+20p_noise_aug.yaml
+@@ -0,0 +1,115 @@
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 5, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: True
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 10
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/cfgs/waymo/mtr+20p_noise_eval.yaml b/tools/cfgs/waymo/mtr+20p_noise_eval.yaml
+new file mode 100644
+index 0000000..265feb2
+--- /dev/null
++++ b/tools/cfgs/waymo/mtr+20p_noise_eval.yaml
+@@ -0,0 +1,115 @@
++DATA_CONFIG:
++    DATASET: WaymoDataset
++    OBJECT_TYPE: &object_type ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
++    
++    DATA_ROOT: 'data/waymo'
++    SPLIT_DIR: {
++        'train': 'processed_scenarios_training', 
++        'test': 'processed_scenarios_validation'
++    }
++
++    INFO_FILE: {
++        'train': 'processed_scenarios_training_infos.pkl', 
++        'test': 'processed_scenarios_val_infos.pkl'
++    }
++
++    SAMPLE_INTERVAL: {
++        'train': 5, 
++        'test': 1
++    }
++
++    INFO_FILTER_DICT: 
++        filter_info_by_object_type: *object_type
++
++    # ---- perception noise for robustness experiments ----
++    PERCEPTION_NOISE:
++        APPLY_TRAIN: False
++        APPLY_TEST: True
++        LEVEL: 1.0            # global strength, sweep 0 / 0.5 / 1 / 2 / 3
++        SEED: 0
++        POS_STD: 0.15         # m
++        POS_RANGE_COEF: 0.005 # extra m per m of distance to SDC
++        POS_RHO: 0.8
++        HEAD_STD: 0.05        # rad
++        VEL_STD: 0.2          # m/s
++        SIZE_STD: 0.05
++        DROP_PROB: 0.05
++        TRUNC_PROB: 0.1
++        IDSWAP_PROB: 0.05
++        IDSWAP_DIST: 3.0
++        KEEP_SDC_CLEAN: True
++        DT: 0.1
++
++   # for map feature encoding
++    POINT_SAMPLED_INTERVAL: 1
++    NUM_POINTS_EACH_POLYLINE: 20
++    VECTOR_BREAK_DIST_THRESH: 1.0
++
++    NUM_OF_SRC_POLYLINES: 768
++    CENTER_OFFSET_OF_MAP: &center_offset [30.0, 0]
++
++
++MODEL:
++    CONTEXT_ENCODER:
++        NAME: MTREncoder
++
++        NUM_OF_ATTN_NEIGHBORS: 16
++        NUM_INPUT_ATTR_AGENT: 29
++        NUM_INPUT_ATTR_MAP: 9
++        
++        NUM_CHANNEL_IN_MLP_AGENT: 256
++        NUM_CHANNEL_IN_MLP_MAP: 64
++        NUM_LAYER_IN_MLP_AGENT: 3
++        NUM_LAYER_IN_MLP_MAP: 5
++        NUM_LAYER_IN_PRE_MLP_MAP: 3
++
++        D_MODEL: 256
++        NUM_ATTN_LAYERS: 6
++        NUM_ATTN_HEAD: 8 
++        DROPOUT_OF_ATTN: 0.1 
++
++        USE_LOCAL_ATTN: True
++
++    MOTION_DECODER:
++        NAME: MTRDecoder
++
++        OBJECT_TYPE: *object_type 
++        CENTER_OFFSET_OF_MAP: *center_offset
++
++        NUM_FUTURE_FRAMES: 80
++        NUM_MOTION_MODES: 6
++
++        INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
++
++        D_MODEL: 512
++        NUM_DECODER_LAYERS: 6 
++        NUM_ATTN_HEAD: 8
++        MAP_D_MODEL: 256
++        DROPOUT_OF_ATTN: 0.1 
++
++        NUM_BASE_MAP_POLYLINES: 256
++        NUM_WAYPOINT_MAP_POLYLINES: 128
++
++        LOSS_WEIGHTS: {
++            'cls': 1.0, 
++            'reg': 1.0, 
++            'vel': 0.5
++        }
++
++        NMS_DIST_THRESH: 2.5
++
++
++OPTIMIZATION:
++    BATCH_SIZE_PER_GPU: 10
++    NUM_EPOCHS: 30
++
++    OPTIMIZER: AdamW
++    LR: 0.0001
++    WEIGHT_DECAY: 0.01
++
++    SCHEDULER: lambdaLR
++    DECAY_STEP_LIST: [22, 24, 26, 28]
++    LR_DECAY: 0.5
++    LR_CLIP: 0.000001
++
++    GRAD_NORM_CLIP: 1000.0
+diff --git a/tools/eval_utils/eval_utils.py b/tools/eval_utils/eval_utils.py
+index fd9254e..8200973 100644
+--- a/tools/eval_utils/eval_utils.py
++++ b/tools/eval_utils/eval_utils.py
+@@ -63,7 +63,7 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, sa
+     if dist_test:
+         logger.info(f'Total number of samples before merging from multiple GPUs: {len(pred_dicts)}')
+         pred_dicts = common_utils.merge_results_dist(pred_dicts, len(dataset), tmpdir=result_dir / 'tmpdir')
+-        logger.info(f'Total number of samples after merging from multiple GPUs (removing duplicate): {len(pred_dicts)}')
++        logger.info(f'Total number of samples after merging from multiple GPUs (removing duplicate): {len(pred_dicts) if pred_dicts is not None else 0}')
+ 
+     logger.info('*************** Performance of EPOCH %s *****************' % epoch_id)
+     sec_per_example = (time.time() - start_time) / len(dataloader.dataset)
+diff --git a/tools/run_noise_sweep.sh b/tools/run_noise_sweep.sh
+new file mode 100755
+index 0000000..e8715d2
+--- /dev/null
++++ b/tools/run_noise_sweep.sh
+@@ -0,0 +1,28 @@
++#!/usr/bin/env bash
++# Usage (from MTR/tools):
++#   bash run_noise_sweep.sh <ckpt_path> <tag> [num_gpus=1] [cfg=cfgs/waymo/a100_clean.yaml] [total_batch_size=80]
++# Evaluates one checkpoint under increasing noise levels, then a per-noise-type
++# ablation at LEVEL=1 (each type alone). Results land in
++#   ../output/<cfg_dir>/<cfg_name>/<tag>/eval/epoch_*/<eval_tag>/log_eval_*.txt
++set -e
++CKPT=$1; TAG=$2; NGPU=${3:-1}; CFG=${4:-cfgs/waymo/a100_clean.yaml}; BS=${5:-80}
++P=DATA_CONFIG.PERCEPTION_NOISE
++run () {  # $1 = eval tag, rest = --set overrides
++  local et=$1; shift
++  if [ "$NGPU" -eq 1 ]; then
++    python test.py --cfg_file $CFG --ckpt $CKPT --extra_tag $TAG --eval_tag $et --batch_size $BS --set "$@"
++  else
++    bash scripts/dist_test.sh $NGPU --cfg_file $CFG --ckpt $CKPT --extra_tag $TAG --eval_tag $et --batch_size $BS --set "$@"
++  fi
++}
++# 1) strength sweep (LEVEL 0 == clean evaluation)
++for L in 0.0 0.5 1.0 2.0 3.0; do run level_$L $P.LEVEL $L; done
++# 2) single-type ablation: zero all strengths, then enable one
++ZERO="$P.POS_STD 0.0 $P.POS_RANGE_COEF 0.0 $P.HEAD_STD 0.0 $P.VEL_STD 0.0 $P.SIZE_STD 0.0 $P.DROP_PROB 0.0 $P.TRUNC_PROB 0.0 $P.IDSWAP_PROB 0.0"
++run only_pos    $ZERO $P.POS_STD 0.15 $P.POS_RANGE_COEF 0.005
++run only_head   $ZERO $P.HEAD_STD 0.05
++run only_vel    $ZERO $P.VEL_STD 0.2
++run only_drop   $ZERO $P.DROP_PROB 0.05
++run only_trunc  $ZERO $P.TRUNC_PROB 0.1
++run only_idswap $ZERO $P.IDSWAP_PROB 0.5
++echo "done: $TAG"
+diff --git a/tools/scripts/dist_test.sh b/tools/scripts/dist_test.sh
+new file mode 100755
+index 0000000..9f2ea8f
+--- /dev/null
++++ b/tools/scripts/dist_test.sh
+@@ -0,0 +1,21 @@
++#!/usr/bin/env bash
++
++set -x
++NGPUS=$1
++PY_ARGS=${@:2}
++
++
++while true
++do
++    PORT=$(( ((RANDOM<<15)|RANDOM) % 49152 + 10000 ))
++    status="$(nc -z 127.0.0.1 $PORT < /dev/null &>/dev/null; echo $?)"
++    if [ "${status}" != "0" ]; then
++        break;
++    fi
++done
++echo $PORT
++
++python -m torch.distributed.launch --nproc_per_node=${NGPUS} --rdzv_endpoint=localhost:${PORT} test.py --launcher pytorch ${PY_ARGS}
++
++# torchrun --nproc_per_node=${NGPUS} --rdzv_endpoint=localhost:${PORT} test.py --launcher pytorch ${PY_ARGS}
++

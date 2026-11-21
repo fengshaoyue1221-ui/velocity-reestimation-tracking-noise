@@ -1,0 +1,31 @@
+script,eval_tag,lambda,non-default settings (effective),purpose
+reviewer_ctrl,rc_check_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True ACC_FROM_CLEAN=True VEL_FEAT_CLEAN=True,Correctness check: both switches on must reproduce the clean-input mAP
+reviewer_ctrl,rc_fd_clean,1.0,POS_STD=0.0 POS_RANGE_COEF=0.0 HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True,"Item 1: clean positions, velocity = finite difference of CLEAN positions"
+reviewer_ctrl,rc_velfeat_only_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True ACC_FROM_CLEAN=True,Item 5: only the velocity feature carries the re-estimated velocity (acceleration from clean velocity)
+reviewer_ctrl,rc_acc_only_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True VEL_FEAT_CLEAN=True,Item 5: only the acceleration feature is derived from the re-estimated velocity (clean velocity feature)
+reviewer_ctrl,rc_velfeat_only_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True ACC_FROM_CLEAN=True,Item 5: only the velocity feature carries the re-estimated velocity (acceleration from clean velocity)
+reviewer_ctrl,rc_acc_only_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True VEL_FEAT_CLEAN=True,Item 5: only the acceleration feature is derived from the re-estimated velocity (clean velocity feature)
+reviewer_ctrl,rc_pos_offset_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 VEL_FROM_POS=False,"Item 2: jittered positions, clean velocities (offset only)"
+reviewer_ctrl,rc_vel_derived_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True,"Item 2: clean positions, velocity re-derived from jittered positions (velocity only)"
+reviewer_ctrl,rc_both_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0,Item 2: jittered positions + re-derived velocity (= position jitter)
+reviewer_ctrl,rc_all_0.5,0.5,(defaults),Item 2: all error types (full corruption model)
+reviewer_ctrl,rc_all_cleanvel_0.5,0.5,VEL_FROM_POS=False,"Item 2: all error types, velocity not re-estimated"
+reviewer_ctrl,rc_pos_offset_0.35,0.35,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 VEL_FROM_POS=False,"Item 2: jittered positions, clean velocities (offset only)"
+reviewer_ctrl,rc_vel_derived_0.35,0.35,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True,"Item 2: clean positions, velocity re-derived from jittered positions (velocity only)"
+reviewer_ctrl,rc_both_0.35,0.35,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0,Item 2: jittered positions + re-derived velocity (= position jitter)
+reviewer_ctrl,rc_all_0.35,0.35,(defaults),Item 2: all error types (full corruption model)
+reviewer_ctrl,rc_all_cleanvel_0.35,0.35,VEL_FROM_POS=False,"Item 2: all error types, velocity not re-estimated"
+reviewer_ctrl,rc_pos_offset_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 VEL_FROM_POS=False,"Item 2: jittered positions, clean velocities (offset only)"
+reviewer_ctrl,rc_vel_derived_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 POS_FOR_VEL_ONLY=True,"Item 2: clean positions, velocity re-derived from jittered positions (velocity only)"
+reviewer_ctrl,rc_both_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0,Item 2: jittered positions + re-derived velocity (= position jitter)
+reviewer_ctrl,rc_all_0.75,0.75,(defaults),Item 2: all error types (full corruption model)
+reviewer_ctrl,rc_all_cleanvel_0.75,0.75,VEL_FROM_POS=False,"Item 2: all error types, velocity not re-estimated"
+kf_ctrl,kc_check_fd_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True,Correctness check: forced full re-estimation at lambda=1 must equal the paper's position-jitter run
+kf_ctrl,kc_kfvel_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf,KF control: jittered positions + Kalman-filter velocity
+kf_ctrl,kc_kffull_1.0,1.0,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf KF_POSITIONS=True,KF control: Kalman-filter positions and velocities (tracker output)
+kf_ctrl,kc_fd_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True,KF control: jittered positions + finite-difference velocity (full re-estimation)
+kf_ctrl,kc_kfvel_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf,KF control: jittered positions + Kalman-filter velocity
+kf_ctrl,kc_kffull_0.75,0.75,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf KF_POSITIONS=True,KF control: Kalman-filter positions and velocities (tracker output)
+kf_ctrl,kc_fd_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True,KF control: jittered positions + finite-difference velocity (full re-estimation)
+kf_ctrl,kc_kfvel_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf,KF control: jittered positions + Kalman-filter velocity
+kf_ctrl,kc_kffull_0.5,0.5,HEAD_STD=0.0 VEL_STD=0.0 SIZE_STD=0.0 DROP_PROB=0.0 TRUNC_PROB=0.0 IDSWAP_PROB=0.0 FORCE_FULL_REEST=True VEL_ESTIMATOR=kf KF_POSITIONS=True,KF control: Kalman-filter positions and velocities (tracker output)

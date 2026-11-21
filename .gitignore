@@ -1,0 +1,11 @@
+# upstream code, data and outputs are not part of this repository
+MTR/
+data/
+output/
+*.pth
+*.tfrecord*
+.stages_*/
+paper/
+__pycache__/
+*.pyc
+*.tar.gz

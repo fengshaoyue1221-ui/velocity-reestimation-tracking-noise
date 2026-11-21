@@ -1,0 +1,13 @@
+================ clean-trained model  (clean input mAP 0.2766) ================
+[check] FD with forced full re-estimation at lambda=1: 0.0936 vs paper's position-jitter run 0.0936 -> PASS
+   lambda |            FD velocity |            KF velocity |   KF position+velocity
+   1.0    |       0.0936 ( -66.2%) |       0.1205 ( -56.4%) |       0.1242 ( -55.1%)
+   0.75   |       0.1113 ( -59.8%) |       0.1399 ( -49.4%) |       0.1421 ( -48.6%)
+   0.5    |       0.1395 ( -49.6%) |       0.1656 ( -40.1%) |       0.1656 ( -40.1%)
+
+================ mix-trained model  (clean input mAP 0.2774) ================
+[check] FD with forced full re-estimation at lambda=1: 0.1705 vs paper's position-jitter run 0.1705 -> PASS
+   lambda |            FD velocity |            KF velocity |   KF position+velocity
+   1.0    |       0.1705 ( -38.5%) |       0.1522 ( -45.1%) |       0.1570 ( -43.4%)
+   0.75   |       0.1844 ( -33.5%) |       0.1726 ( -37.8%) |       0.1748 ( -37.0%)
+   0.5    |       0.2006 ( -27.7%) |       0.1997 ( -28.0%) |       0.2001 ( -27.9%)

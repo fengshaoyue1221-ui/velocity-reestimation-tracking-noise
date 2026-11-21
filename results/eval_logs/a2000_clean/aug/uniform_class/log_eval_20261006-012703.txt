@@ -1,0 +1,249 @@
+2026-10-06 01:27:03,471   INFO  **********************Start logging**********************
+2026-10-06 01:27:03,471   INFO  CUDA_VISIBLE_DEVICES=ALL
+2026-10-06 01:27:03,471   INFO  total_batch_size: 12
+2026-10-06 01:27:03,471   INFO  cfg_file         cfgs/waymo/a2000_clean.yaml
+2026-10-06 01:27:03,472   INFO  batch_size       4
+2026-10-06 01:27:03,472   INFO  workers          4
+2026-10-06 01:27:03,472   INFO  extra_tag        aug
+2026-10-06 01:27:03,472   INFO  ckpt             /home/anonymous/womd_noise_kit/MTR/output/waymo/a2000_aug/aug/ckpt/checkpoint_epoch_30.pth
+2026-10-06 01:27:03,472   INFO  launcher         pytorch
+2026-10-06 01:27:03,472   INFO  tcp_port         18888
+2026-10-06 01:27:03,472   INFO  local_rank       0
+2026-10-06 01:27:03,472   INFO  fix_random_seed  False
+2026-10-06 01:27:03,472   INFO  set_cfgs         ['DATA_CONFIG.PERCEPTION_NOISE.LEVEL', '1.0', 'DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE.TYPE_PEDESTRIAN', '1.0', 'DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE.TYPE_CYCLIST', '1.0']
+2026-10-06 01:27:03,472   INFO  max_waiting_mins 30
+2026-10-06 01:27:03,472   INFO  start_epoch      0
+2026-10-06 01:27:03,472   INFO  eval_tag         uniform_class
+2026-10-06 01:27:03,472   INFO  eval_all         False
+2026-10-06 01:27:03,472   INFO  ckpt_dir         None
+2026-10-06 01:27:03,472   INFO  save_to_file     False
+2026-10-06 01:27:03,472   INFO  cfg.ROOT_DIR: /home/anonymous/womd_noise_kit/MTR
+2026-10-06 01:27:03,472   INFO  cfg.LOCAL_RANK: 0
+2026-10-06 01:27:03,472   INFO  
+cfg.DATA_CONFIG = edict()
+2026-10-06 01:27:03,472   INFO  cfg.DATA_CONFIG.DATASET: WaymoDataset
+2026-10-06 01:27:03,472   INFO  cfg.DATA_CONFIG.OBJECT_TYPE: ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
+2026-10-06 01:27:03,472   INFO  cfg.DATA_CONFIG.DATA_ROOT: data/waymo
+2026-10-06 01:27:03,472   INFO  
+cfg.DATA_CONFIG.SPLIT_DIR = edict()
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.SPLIT_DIR.train: processed_scenarios_training
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.SPLIT_DIR.test: processed_scenarios_validation
+2026-10-06 01:27:03,473   INFO  
+cfg.DATA_CONFIG.INFO_FILE = edict()
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.INFO_FILE.train: processed_scenarios_training_infos.pkl
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.INFO_FILE.test: processed_scenarios_val_infos.pkl
+2026-10-06 01:27:03,473   INFO  
+cfg.DATA_CONFIG.SAMPLE_INTERVAL = edict()
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.SAMPLE_INTERVAL.train: 1
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.SAMPLE_INTERVAL.test: 1
+2026-10-06 01:27:03,473   INFO  
+cfg.DATA_CONFIG.INFO_FILTER_DICT = edict()
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.INFO_FILTER_DICT.filter_info_by_object_type: ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
+2026-10-06 01:27:03,473   INFO  
+cfg.DATA_CONFIG.PERCEPTION_NOISE = edict()
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.APPLY_TRAIN: False
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.APPLY_TEST: True
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.LEVEL: 1.0
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.SEED: 0
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.POS_STD: 0.15
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.POS_RANGE_COEF: 0.005
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.POS_RHO: 0.8
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.HEAD_STD: 0.05
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.VEL_STD: 0.2
+2026-10-06 01:27:03,473   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.SIZE_STD: 0.05
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.DROP_PROB: 0.05
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.TRUNC_PROB: 0.1
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.IDSWAP_PROB: 0.05
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.IDSWAP_DIST: 3.0
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.KEEP_SDC_CLEAN: True
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.DT: 0.1
+2026-10-06 01:27:03,474   INFO  
+cfg.DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE = edict()
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE.TYPE_VEHICLE: 1.0
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE.TYPE_PEDESTRIAN: 1.0
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.PERCEPTION_NOISE.CLASS_SCALE.TYPE_CYCLIST: 1.0
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.POINT_SAMPLED_INTERVAL: 1
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.NUM_POINTS_EACH_POLYLINE: 20
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.VECTOR_BREAK_DIST_THRESH: 1.0
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.NUM_OF_SRC_POLYLINES: 768
+2026-10-06 01:27:03,474   INFO  cfg.DATA_CONFIG.CENTER_OFFSET_OF_MAP: [30.0, 0]
+2026-10-06 01:27:03,474   INFO  
+cfg.MODEL = edict()
+2026-10-06 01:27:03,474   INFO  
+cfg.MODEL.CONTEXT_ENCODER = edict()
+2026-10-06 01:27:03,474   INFO  cfg.MODEL.CONTEXT_ENCODER.NAME: MTREncoder
+2026-10-06 01:27:03,474   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_OF_ATTN_NEIGHBORS: 16
+2026-10-06 01:27:03,474   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_INPUT_ATTR_AGENT: 29
+2026-10-06 01:27:03,474   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_INPUT_ATTR_MAP: 9
+2026-10-06 01:27:03,474   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_CHANNEL_IN_MLP_AGENT: 256
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_CHANNEL_IN_MLP_MAP: 64
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_LAYER_IN_MLP_AGENT: 3
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_LAYER_IN_MLP_MAP: 5
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_LAYER_IN_PRE_MLP_MAP: 3
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.D_MODEL: 256
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_ATTN_LAYERS: 6
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.NUM_ATTN_HEAD: 8
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.DROPOUT_OF_ATTN: 0.1
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.CONTEXT_ENCODER.USE_LOCAL_ATTN: True
+2026-10-06 01:27:03,475   INFO  
+cfg.MODEL.MOTION_DECODER = edict()
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NAME: MTRDecoder
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.OBJECT_TYPE: ['TYPE_VEHICLE', 'TYPE_PEDESTRIAN', 'TYPE_CYCLIST']
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.CENTER_OFFSET_OF_MAP: [30.0, 0]
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_FUTURE_FRAMES: 80
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_MOTION_MODES: 6
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.INTENTION_POINTS_FILE: data/waymo/cluster_64_center_dict.pkl
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.D_MODEL: 512
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_DECODER_LAYERS: 6
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_ATTN_HEAD: 8
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.MAP_D_MODEL: 256
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.DROPOUT_OF_ATTN: 0.1
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_BASE_MAP_POLYLINES: 256
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.NUM_WAYPOINT_MAP_POLYLINES: 128
+2026-10-06 01:27:03,475   INFO  
+cfg.MODEL.MOTION_DECODER.LOSS_WEIGHTS = edict()
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.LOSS_WEIGHTS.cls: 1.0
+2026-10-06 01:27:03,475   INFO  cfg.MODEL.MOTION_DECODER.LOSS_WEIGHTS.reg: 1.0
+2026-10-06 01:27:03,476   INFO  cfg.MODEL.MOTION_DECODER.LOSS_WEIGHTS.vel: 0.5
+2026-10-06 01:27:03,476   INFO  cfg.MODEL.MOTION_DECODER.NMS_DIST_THRESH: 2.5
+2026-10-06 01:27:03,476   INFO  
+cfg.OPTIMIZATION = edict()
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.BATCH_SIZE_PER_GPU: 4
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.NUM_EPOCHS: 30
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.OPTIMIZER: AdamW
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.LR: 0.0001
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.WEIGHT_DECAY: 0.01
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.SCHEDULER: lambdaLR
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.DECAY_STEP_LIST: [22, 24, 26, 28]
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.LR_DECAY: 0.5
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.LR_CLIP: 1e-06
+2026-10-06 01:27:03,476   INFO  cfg.OPTIMIZATION.GRAD_NORM_CLIP: 1000.0
+2026-10-06 01:27:03,476   INFO  cfg.TAG: a2000_clean
+2026-10-06 01:27:03,476   INFO  cfg.EXP_GROUP_PATH: waymo
+2026-10-06 01:27:03,476   INFO  Start to load infos from /home/anonymous/womd_noise_kit/MTR/data/waymo/processed_scenarios_val_infos.pkl
+2026-10-06 01:27:03,612   INFO  Total scenes before filters: 14610
+2026-10-06 01:27:03,904   INFO  Total scenes after filter_info_by_object_type: 14610
+2026-10-06 01:27:03,905   INFO  Total scenes after filters: 14610
+2026-10-06 01:27:03,905   INFO  Perception noise ON (test): {'APPLY_TRAIN': False, 'APPLY_TEST': True, 'LEVEL': 1.0, 'SEED': 0, 'POS_STD': 0.15, 'POS_RANGE_COEF': 0.005, 'POS_RHO': 0.8, 'HEAD_STD': 0.05, 'VEL_STD': 0.2, 'SIZE_STD': 0.05, 'DROP_PROB': 0.05, 'TRUNC_PROB': 0.1, 'IDSWAP_PROB': 0.05, 'IDSWAP_DIST': 3.0, 'KEEP_SDC_CLEAN': True, 'DT': 0.1, 'CLASS_SCALE': {'TYPE_VEHICLE': 1.0, 'TYPE_PEDESTRIAN': 1.0, 'TYPE_CYCLIST': 1.0}}
+2026-10-06 01:27:05,975   INFO  ==> Loading parameters from checkpoint /home/anonymous/womd_noise_kit/MTR/output/waymo/a2000_aug/aug/ckpt/checkpoint_epoch_30.pth to CPU
+2026-10-06 01:27:06,541   INFO  ==> Checkpoint trained from version: none
+2026-10-06 01:27:06,541   INFO  The number of disk ckpt keys: 842
+2026-10-06 01:27:06,695   INFO  Missing keys: []
+2026-10-06 01:27:06,695   INFO  The number of missing keys: 0
+2026-10-06 01:27:06,695   INFO  The number of unexpected keys: 0
+2026-10-06 01:27:06,695   INFO  ==> Done (total keys 842)
+2026-10-06 01:27:06,835   INFO  *************** LOAD MODEL (epoch=30, iter=121350) for EVALUATION *****************
+2026-10-06 01:27:06,836   INFO  *************** EPOCH 30 EVALUATION *****************
+2026-10-06 01:27:09,410   INFO  eval: epoch=30, batch_iter=0/1218, batch_size=4, iter_cost=2.40s, time_cost: 00:02/48:47, 
+2026-10-06 01:27:22,083   INFO  eval: epoch=30, batch_iter=50/1218, batch_size=4, iter_cost=0.30s, time_cost: 00:15/05:52, 
+2026-10-06 01:27:35,053   INFO  eval: epoch=30, batch_iter=100/1218, batch_size=4, iter_cost=0.28s, time_cost: 00:28/05:13, 
+2026-10-06 01:27:48,169   INFO  eval: epoch=30, batch_iter=150/1218, batch_size=4, iter_cost=0.27s, time_cost: 00:41/04:53, 
+2026-10-06 01:28:01,577   INFO  eval: epoch=30, batch_iter=200/1218, batch_size=4, iter_cost=0.27s, time_cost: 00:54/04:37, 
+2026-10-06 01:28:15,763   INFO  eval: epoch=30, batch_iter=250/1218, batch_size=4, iter_cost=0.28s, time_cost: 01:08/04:26, 
+2026-10-06 01:28:28,867   INFO  eval: epoch=30, batch_iter=300/1218, batch_size=4, iter_cost=0.27s, time_cost: 01:21/04:10, 
+2026-10-06 01:28:42,557   INFO  eval: epoch=30, batch_iter=350/1218, batch_size=4, iter_cost=0.27s, time_cost: 01:35/03:56, 
+2026-10-06 01:28:56,488   INFO  eval: epoch=30, batch_iter=400/1218, batch_size=4, iter_cost=0.27s, time_cost: 01:49/03:43, 
+2026-10-06 01:29:11,259   INFO  eval: epoch=30, batch_iter=450/1218, batch_size=4, iter_cost=0.28s, time_cost: 02:04/03:32, 
+2026-10-06 01:29:25,510   INFO  eval: epoch=30, batch_iter=500/1218, batch_size=4, iter_cost=0.28s, time_cost: 02:18/03:18, 
+2026-10-06 01:29:39,837   INFO  eval: epoch=30, batch_iter=550/1218, batch_size=4, iter_cost=0.28s, time_cost: 02:32/03:05, 
+2026-10-06 01:29:54,078   INFO  eval: epoch=30, batch_iter=600/1218, batch_size=4, iter_cost=0.28s, time_cost: 02:47/02:52, 
+2026-10-06 01:30:08,215   INFO  eval: epoch=30, batch_iter=650/1218, batch_size=4, iter_cost=0.28s, time_cost: 03:01/02:38, 
+2026-10-06 01:30:21,313   INFO  eval: epoch=30, batch_iter=700/1218, batch_size=4, iter_cost=0.28s, time_cost: 03:14/02:23, 
+2026-10-06 01:30:36,096   INFO  eval: epoch=30, batch_iter=750/1218, batch_size=4, iter_cost=0.28s, time_cost: 03:29/02:10, 
+2026-10-06 01:30:51,068   INFO  eval: epoch=30, batch_iter=800/1218, batch_size=4, iter_cost=0.28s, time_cost: 03:44/01:57, 
+2026-10-06 01:31:05,301   INFO  eval: epoch=30, batch_iter=850/1218, batch_size=4, iter_cost=0.28s, time_cost: 03:58/01:43, 
+2026-10-06 01:31:20,042   INFO  eval: epoch=30, batch_iter=900/1218, batch_size=4, iter_cost=0.28s, time_cost: 04:13/01:29, 
+2026-10-06 01:31:34,474   INFO  eval: epoch=30, batch_iter=950/1218, batch_size=4, iter_cost=0.28s, time_cost: 04:27/01:15, 
+2026-10-06 01:31:48,805   INFO  eval: epoch=30, batch_iter=1000/1218, batch_size=4, iter_cost=0.28s, time_cost: 04:41/01:01, 
+2026-10-06 01:32:03,364   INFO  eval: epoch=30, batch_iter=1050/1218, batch_size=4, iter_cost=0.28s, time_cost: 04:56/00:47, 
+2026-10-06 01:32:18,124   INFO  eval: epoch=30, batch_iter=1100/1218, batch_size=4, iter_cost=0.28s, time_cost: 05:11/00:33, 
+2026-10-06 01:32:32,886   INFO  eval: epoch=30, batch_iter=1150/1218, batch_size=4, iter_cost=0.28s, time_cost: 05:25/00:19, 
+2026-10-06 01:32:47,607   INFO  eval: epoch=30, batch_iter=1200/1218, batch_size=4, iter_cost=0.28s, time_cost: 05:40/00:05, 
+2026-10-06 01:32:52,359   INFO  eval: epoch=30, batch_iter=1217/1218, batch_size=2, iter_cost=0.28s, time_cost: 05:45/00:00, 
+2026-10-06 01:32:52,469   INFO  Total number of samples before merging from multiple GPUs: 4870
+2026-10-06 01:33:06,561   INFO  Total number of samples after merging from multiple GPUs (removing duplicate): 14610
+2026-10-06 01:33:06,593   INFO  *************** Performance of EPOCH 30 *****************
+2026-10-06 01:33:06,593   INFO  Generate label finished(sec_per_example: 0.0246 second).
+2026-10-06 01:33:16,284   INFO  
+minADE - TYPE_VEHICLE_5	: 0.7400 
+minADE - TYPE_VEHICLE_9	: 1.2059 
+minADE - TYPE_VEHICLE_15	: 1.9853 
+minADE - TYPE_PEDESTRIAN_5	: 0.4260 
+minADE - TYPE_PEDESTRIAN_9	: 0.6435 
+minADE - TYPE_PEDESTRIAN_15	: 0.9746 
+minADE - TYPE_CYCLIST_5	: 0.6793 
+minADE - TYPE_CYCLIST_9	: 1.0972 
+minADE - TYPE_CYCLIST_15	: 1.7715 
+minFDE - TYPE_VEHICLE_5	: 1.1025 
+minFDE - TYPE_VEHICLE_9	: 2.0570 
+minFDE - TYPE_VEHICLE_15	: 3.7951 
+minFDE - TYPE_PEDESTRIAN_5	: 0.6181 
+minFDE - TYPE_PEDESTRIAN_9	: 1.0819 
+minFDE - TYPE_PEDESTRIAN_15	: 1.8894 
+minFDE - TYPE_CYCLIST_5	: 1.0795 
+minFDE - TYPE_CYCLIST_9	: 1.9493 
+minFDE - TYPE_CYCLIST_15	: 3.5782 
+MissRate - TYPE_VEHICLE_5	: 0.2707 
+MissRate - TYPE_VEHICLE_9	: 0.2707 
+MissRate - TYPE_VEHICLE_15	: 0.3078 
+MissRate - TYPE_PEDESTRIAN_5	: 0.2013 
+MissRate - TYPE_PEDESTRIAN_9	: 0.1910 
+MissRate - TYPE_PEDESTRIAN_15	: 0.2115 
+MissRate - TYPE_CYCLIST_5	: 0.3482 
+MissRate - TYPE_CYCLIST_9	: 0.3059 
+MissRate - TYPE_CYCLIST_15	: 0.3204 
+OverlapRate - TYPE_VEHICLE_5	: 0.0118 
+OverlapRate - TYPE_VEHICLE_9	: 0.0330 
+OverlapRate - TYPE_VEHICLE_15	: 0.0716 
+OverlapRate - TYPE_PEDESTRIAN_5	: 0.0547 
+OverlapRate - TYPE_PEDESTRIAN_9	: 0.0659 
+OverlapRate - TYPE_PEDESTRIAN_15	: 0.0800 
+OverlapRate - TYPE_CYCLIST_5	: 0.0253 
+OverlapRate - TYPE_CYCLIST_9	: 0.0424 
+OverlapRate - TYPE_CYCLIST_15	: 0.0798 
+mAP - TYPE_VEHICLE_5	: 0.2311 
+mAP - TYPE_VEHICLE_9	: 0.2433 
+mAP - TYPE_VEHICLE_15	: 0.2101 
+mAP - TYPE_PEDESTRIAN_5	: 0.1718 
+mAP - TYPE_PEDESTRIAN_9	: 0.1753 
+mAP - TYPE_PEDESTRIAN_15	: 0.1684 
+mAP - TYPE_CYCLIST_5	: 0.1540 
+mAP - TYPE_CYCLIST_9	: 0.1521 
+mAP - TYPE_CYCLIST_15	: 0.0994 
+-------------------------------------------------------------: 0.0000 
+minADE - VEHICLE: 1.3104 
+minADE - PEDESTRIAN: 0.6814 
+minADE - CYCLIST: 1.1827 
+minFDE - VEHICLE: 2.3182 
+minFDE - PEDESTRIAN: 1.1965 
+minFDE - CYCLIST: 2.2023 
+MissRate - VEHICLE: 0.2831 
+MissRate - PEDESTRIAN: 0.2013 
+MissRate - CYCLIST: 0.3248 
+OverlapRate - VEHICLE: 0.0388 
+OverlapRate - PEDESTRIAN: 0.0669 
+OverlapRate - CYCLIST: 0.0491 
+mAP - VEHICLE: 0.2282 
+mAP - PEDESTRIAN: 0.1718 
+mAP - CYCLIST: 0.1352 
+--------------------------------------------------------------: 0.0000 
+minADE: 1.0581 
+minFDE: 1.9057 
+MissRate: 0.2697 
+mAP: 0.1784 
+---------------------------------------------------------------: 0.0000 
+TYPE_UNSET: 0.0000 
+TYPE_VEHICLE: 54940.0000 
+TYPE_PEDESTRIAN: 6888.0000 
+TYPE_CYCLIST: 1818.0000 
+TYPE_OTHER: 0.0000 
+-----Note that this evaluation may have marginal differences with the official Waymo evaluation server-----: 0.0000 
+
+       Waymo          mAP       minADE       minFDE     MissRate            
+      VEHICLE      0.2282,      1.3104,      2.3182,      0.2831,            
+   PEDESTRIAN      0.1718,      0.6814,      1.1965,      0.2013,            
+      CYCLIST      0.1352,      1.1827,      2.2023,      0.3248,            
+          Avg      0.1784,      1.0581,      1.9057,      0.2697,            
+
+2026-10-06 01:33:16,284   INFO  Result is save to /home/anonymous/womd_noise_kit/MTR/output/waymo/a2000_clean/aug/eval/epoch_30/uniform_class
+2026-10-06 01:33:16,284   INFO  ****************Evaluation done.*****************

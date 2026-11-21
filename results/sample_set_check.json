@@ -1,0 +1,782 @@
+{
+ "a2000_clean/aug/eval/epoch_30/level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/level_0.25": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/level_0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/level_2.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/level_3.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/mech_all_cleanvel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/mech_pos_offset": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/mech_vel_derived": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_drop": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_head": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_idswap": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_pos": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_trunc": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/only_vel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/seed1_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/seed2_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/sens_beta0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/sens_rho0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/sens_rho0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/sens_rho0.95": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/uniform_class": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/vs_k11_level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/aug/eval/epoch_30/vs_k11_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_0.25": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_2.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/level_3.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/mech_all_cleanvel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/mech_pos_offset": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/mech_vel_derived": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_drop": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_head": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_idswap": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_pos": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_trunc": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/only_vel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/seed1_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/seed2_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/sens_beta0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/sens_rho0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/sens_rho0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/sens_rho0.95": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/uniform_class": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/vs_k11_level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/vs_k11_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/vs_k11_level_2.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/vs_k5_level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/clean/eval/epoch_30/vs_k5_level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_0.25": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_2.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/level_3.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/mech_all_cleanvel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/mech_pos_offset": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/mech_vel_derived": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_drop": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_head": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_idswap": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_pos": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_trunc": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_clean/mix/eval/epoch_30/only_vel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_0.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_0.25": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_0.5": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_1.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_2.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/level_3.0": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_drop": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_head": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_idswap": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_pos": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_trunc": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ },
+ "a2000_novel/novel/eval/epoch_30/only_vel": {
+  "scenes": 14610,
+  "agents": 63646,
+  "per_type": {
+   "TYPE_VEHICLE": 54940,
+   "TYPE_CYCLIST": 1818,
+   "TYPE_PEDESTRIAN": 6888
+  },
+  "md5": "d1bf650db2f57f8d60adbc97c327e477"
+ }
+}
